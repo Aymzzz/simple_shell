@@ -109,27 +109,49 @@ void execute_command(char *input)
     }
     args[i] = NULL; // NULL-terminate the argument array
 
-    child_pid = fork();
+    // List of directories to search for commands
+    char *directories[] = {"/bin", "/usr/bin", NULL};
 
-    if (child_pid == -1)
+    // Try to find the command in the specified directories
+    char full_path[1024];
+    int found = 0;
+    for (int j = 0; directories[j] != NULL; j++)
     {
-        perror("fork");
-        exit(EXIT_FAILURE);
+        snprintf(full_path, sizeof(full_path), "%s/%s", directories[j], args[0]);
+        if (access(full_path, X_OK) == 0)
+        {
+            found = 1;
+            break;
+        }
     }
 
-    if (child_pid == 0)
+    if (found)
     {
-        // Child process
-        if (execve(args[0], args, NULL) == -1)
+        child_pid = fork();
+
+        if (child_pid == -1)
         {
-            perror("execve");
+            perror("fork");
             exit(EXIT_FAILURE);
+        }
+
+        if (child_pid == 0)
+        {
+            // Child process
+            if (execve(full_path, args, NULL) == -1)
+            {
+                perror("execve");
+                exit(EXIT_FAILURE);
+            }
+        }
+        else
+        {
+            // Parent process
+            wait(&status);
         }
     }
     else
     {
-        // Parent process
-        wait(&status);
+        printf("Command not found: %s\n", args[0]);
     }
 }
-
