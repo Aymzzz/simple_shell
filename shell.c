@@ -52,10 +52,20 @@ void execute_command(char *input)
 {
     pid_t child_pid;
     int status;
-    char *args[] = {input, NULL}; // Command and NULL-terminated argument array
-    char *envp[] = {NULL}; // NULL-terminated environment variable array
+    char *token;
+    char *args[1024]; // An array to hold command and arguments
+    int i = 0;
 
     input[strlen(input) - 1] = '\0'; // Remove newline character
+
+    // Tokenize the input
+    token = strtok(input, " ");
+    while (token != NULL)
+    {
+        args[i++] = token;
+        token = strtok(NULL, " ");
+    }
+    args[i] = NULL; // NULL-terminate the argument array
 
     child_pid = fork();
 
@@ -68,7 +78,7 @@ void execute_command(char *input)
     if (child_pid == 0)
     {
         // Child process
-        if (execve(input, args, envp) == -1)
+        if (execve("/usr/bin/", args, NULL) == -1) //modified this to suit paths as the linux directory
         {
             perror("execve");
             exit(EXIT_FAILURE);
@@ -80,4 +90,3 @@ void execute_command(char *input)
         wait(&status);
     }
 }
-
