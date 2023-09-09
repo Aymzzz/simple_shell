@@ -48,48 +48,7 @@ char *read_line(void)
 
 //function execute_command
 /*
-void execute_command(char *input)
-{
-    pid_t child_pid;
-    int status;
-    char *token;
-    char *args[1024]; // An array to hold command and arguments
-    int i = 0;
-
-    input[strlen(input) - 1] = '\0'; // Remove newline character
-
-    // Tokenize the input
-    token = strtok(input, " ");
-    while (token != NULL)
-    {
-        args[i++] = token;
-        token = strtok(NULL, " ");
-    }
-    args[i] = NULL; // NULL-terminate the argument array
-
-    child_pid = fork();
-
-    if (child_pid == -1)
-    {
-        perror("fork");
-        exit(EXIT_FAILURE);
-    }
-
-    if (child_pid == 0)
-    {
-        // Child process
-        if (execve("/usr/bin/ls", args, NULL) == -1) //modified this to suit paths as the linux directory
-        {
-            perror("execve");
-            exit(EXIT_FAILURE);
-        }
-    }
-    else
-    {
-        // Parent process
-        wait(&status);
-    }
-}*/
+* This code is working but we must keep it in case.
 void execute_command(char *input)
 {
     pid_t child_pid;
@@ -153,5 +112,79 @@ void execute_command(char *input)
     else
     {
         printf("Command not found: %s\n", args[0]);
+    }
+}*/
+void execute_command(char *input)
+{
+    pid_t child_pid;
+    int status;
+    char *token;
+    char *args[1024]; // an array to hold command and arguments
+    int i = 0;
+
+    input[strlen(input) - 1] = '\0'; // remove newline character
+
+    // tokenize the input
+    token = strtok(input, " ");
+    while (token != NULL)
+    {
+        args[i++] = token;
+        token = strtok(NULL, " ");
+    }
+    args[i] = NULL; // NULL-terminate the argument array
+
+    // get the PATH environment variable
+    char *path = getenv("PATH");
+    if (path == NULL)
+    {
+        perror("getenv");
+        exit(EXIT_FAILURE);
+    }
+
+    // tokenize the PATH variable
+    char *dir = strtok(path, ":");
+
+    // try to find the command in each directory in PATH
+    char full_path[1024];
+    int found = 0;
+    while (dir != NULL)
+    {
+        snprintf(full_path, sizeof(full_path), "%s/%s", dir, args[0]);
+        if (access(full_path, X_OK) == 0)
+        {
+            found = 1;
+            break;
+        }
+        dir = strtok(NULL, ":");
+    }
+
+    if (found)
+    {
+        child_pid = fork();
+
+        if (child_pid == -1)
+        {
+            perror("fork");
+            exit(EXIT_FAILURE);
+        }
+
+        if (child_pid == 0)
+        {
+            // child process
+            if (execve(full_path, args, NULL) == -1)
+            {
+                perror("execve");
+                exit(EXIT_FAILURE);
+            }
+        }
+        else
+        {
+            // parent process
+            wait(&status);
+        }
+    }
+    else
+    {
+        printf("command not found: %s\n", args[0]);
     }
 }
