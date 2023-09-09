@@ -78,7 +78,7 @@ void execute_command(char *input)
     if (child_pid == 0)
     {
         // Child process
-        if (execve("/usr/bin/", args, NULL) == -1) //modified this to suit paths as the linux directory
+        if (execve("/usr/bin", args, NULL) == -1) //modified this to suit paths as the linux directory
         {
             perror("execve");
             exit(EXIT_FAILURE);
